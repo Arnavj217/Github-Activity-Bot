@@ -2,59 +2,86 @@ name: Natural GitHub Activity Bot
 
 on:
   schedule:
-    - cron: '0 6 * * *'    # 11:30 AM IST
-    - cron: '0 12 * * *'   # 5:30 PM IST
-    - cron: '45 15 * * *'  # 9:15 PM IST
+    - cron: '0 6 * * *'      # 11:30 AM IST
+    - cron: '0 12 * * *'     # 5:30 PM IST
+    - cron: '45 15 * * *'    # 9:15 PM IST
   workflow_dispatch:
-  
+
 permissions:
   contents: write
 
 jobs:
   commit:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Important for rebase and push
+          fetch-depth: 0
 
-      - name: Set up Git identity as Arnavj217
+      - name: Configure Git
         run: |
-          git config user.name "Arnavj217"
-          git config user.email "arnavjain2107@gmail.com"
+          git config --global user.name "Arnavj217"
+          git config --global user.email "arnavjain2107@gmail.com"
 
-      - name: Install Python & pytz
+      - name: Install Python
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-pip
-          pip install pytz
+          python3 -m pip install --upgrade pip
+          pip3 install pytz
+
+      # Always start from the latest main branch
+      - name: Sync with remote
+        run: |
+          git fetch origin
+          git checkout main
+          git reset --hard origin/main
 
       - name: Run commit script
         run: |
           python3 commit.py
 
-      - name: Stage files if changed (pre-pull)
+      - name: Commit changes
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "📌 Pre-pull changes found. Committing..."
-            git add .
-            git commit -m "📌 Pre-pull auto-commit to avoid rebase error" || echo "Nothing to commit"
-          else
-            echo "✅ No local changes to stage."
+          git add .
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
           fi
 
-      - name: Pull latest changes before pushing
-        run: |
-          git pull origin main --rebase
+          git commit -m "$(python3 - <<'EOF'
+          import random
+          msgs = [
+              '✨ One step at a time',
+              '🚀 Daily activity update',
+              '🌱 Keep growing',
+              '💡 Small progress matters',
+              '🔥 Staying consistent',
+              '🛠️ Code maintenance',
+              '📈 Daily improvements',
+              '🎯 Automated contribution',
+              '⚡ Repository update',
+              '🌟 Another productive step'
+          ]
+          print(random.choice(msgs))
+          EOF
+          )"
 
-      - name: Push if commits are ahead
+      - name: Push changes
         run: |
-          AHEAD=$(git rev-list --count origin/main..HEAD)
-          echo "Local branch is ahead by $AHEAD commit(s)."
-          if [ $AHEAD -gt 0 ]; then
-            echo "🔄 Changes detected. Pushing..."
-            git push origin main
-          else
-            echo "✅ No new commits to push."
-          fi
+          for i in 1 2 3
+          do
+            git pull --rebase origin main
+
+            if git push origin HEAD:main; then
+              echo "Push successful."
+              exit 0
+            fi
+
+            echo "Push failed. Retrying..."
+            sleep 5
+          done
+
+          echo "Push failed after 3 attempts."
+          exit 1
