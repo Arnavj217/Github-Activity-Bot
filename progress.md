@@ -752,3 +752,4 @@
 [2026-09-11 04:06:32 PM] It’s not about perfection. It’s about progress.
 [2026-09-12 12:14:44 AM] The habit of showing up wins the game.
 [2026-09-12 08:49:42 PM] It’s not about perfection. It’s about progress.
+[2026-09-12 08:49:42 PM] Just showing up matters.
